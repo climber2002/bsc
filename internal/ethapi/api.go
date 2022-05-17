@@ -873,13 +873,11 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.Blo
 
 	state, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if state == nil || err != nil {
-		log.Info("State is nil or there are errors")
 		return nil, err
 	}
 	if err := overrides.Apply(state); err != nil {
 		return nil, err
 	}
-	log.Info("Start to check if timeout")
 	// Setup context so it may be cancelled the call has completed
 	// or, in case of unmetered gas, setup a context with a timeout.
 	var cancel context.CancelFunc
@@ -894,7 +892,10 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.Blo
 
 	// Get a new instance of the EVM.
 	msg := args.ToMessage(globalGasCap)
-	log.Info("Message is generated")
+	senderAddr := msg.From().Hex()
+	if common.ShouldTrace(senderAddr) {
+		log.Info("Message is generated")
+	}
 	evm, vmError, err := b.GetEVM(ctx, msg, state, header, nil)
 	if err != nil {
 		return nil, err
@@ -908,7 +909,9 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.Blo
 
 	// Execute the message.
 	gp := new(core.GasPool).AddGas(math.MaxUint64)
-	log.Info("Start to core.ApplyMessage")
+	if common.ShouldTrace(senderAddr) {
+		log.Info("Start to core.ApplyMessage")
+	}
 	result, err := core.ApplyMessage(evm, msg, gp)
 	if err := vmError(); err != nil {
 		return nil, err
