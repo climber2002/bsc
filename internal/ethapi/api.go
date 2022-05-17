@@ -959,7 +959,7 @@ func (e *revertError) ErrorData() interface{} {
 // useful to execute and retrieve values.
 func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride) (hexutil.Bytes, error) {
 	log.Info("Received CallArgs")
-	log.Info(fmt.Sprintf("To: %s, Gas: %s, GasPrice: %s, blockNr: %d", args.To, args.Gas, args.GasPrice, blockNrOrHash.BlockNumber))
+	log.Info(fmt.Sprintf("From: %s, To: %s, Gas: %s, GasPrice: %s, blockNr: %d", args.From, args.To, args.Gas, args.GasPrice, blockNrOrHash.BlockNumber))
 
 	result, err := DoCall(ctx, s.b, args, blockNrOrHash, overrides, vm.Config{}, 5*time.Second, s.b.RPCGasCap())
 	if err != nil {
@@ -969,6 +969,7 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOr
 	if len(result.Revert()) > 0 {
 		return nil, newRevertError(result)
 	}
+	log.Info(fmt.Sprintf("Call result: %v", result.Return()))
 	return result.Return(), result.Err
 }
 
