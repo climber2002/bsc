@@ -873,6 +873,7 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.Blo
 
 	state, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if state == nil || err != nil {
+		log.Info("State is nil or there are errors")
 		return nil, err
 	}
 	if err := overrides.Apply(state); err != nil {
@@ -958,7 +959,8 @@ func (e *revertError) ErrorData() interface{} {
 // useful to execute and retrieve values.
 func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride) (hexutil.Bytes, error) {
 	log.Info("Received CallArgs")
-	log.Info(fmt.Sprintf("To: %s, Gas: %s, GasPrice: %s", args.To, args.Gas, args.GasPrice))
+	log.Info(fmt.Sprintf("To: %s, Gas: %s, GasPrice: %s, blockNr: %d", args.To, args.Gas, args.GasPrice, blockNrOrHash.BlockNumber))
+
 	result, err := DoCall(ctx, s.b, args, blockNrOrHash, overrides, vm.Config{}, 5*time.Second, s.b.RPCGasCap())
 	if err != nil {
 		return nil, err
