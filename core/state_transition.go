@@ -236,6 +236,8 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	// 6. caller has enough balance to cover asset transfer for **topmost** call
 
 	// Check clauses 1-3, buy gas if everything is correct
+	senderAddr := st.msg.From().Hex()
+	log.Info(fmt.Sprintf("sender address: %s", senderAddr))
 	if err := st.preCheck(); err != nil {
 		log.Info("preCheck() has error")
 		return nil, err
