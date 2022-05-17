@@ -639,6 +639,7 @@ func opCreate2(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]
 	return nil, nil
 }
 
+// Andy: Here is when one contract calls another contract
 func opCall(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	stack := scope.Stack
 	// Pop gas. The actual gas in interpreter.evm.callGasTemp.

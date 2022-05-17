@@ -972,6 +972,10 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOr
 	return result.Return(), result.Err
 }
 
+func (s *PublicBlockChainAPI) Hello(ctx context.Context, text string) (string, error) {
+	return fmt.Sprintf("Hello %s!!!", text), nil
+}
+
 func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.BlockNumberOrHash, gasCap uint64) (hexutil.Uint64, error) {
 	// Binary search the gas requirement, as it may be higher than the amount used
 	var (
