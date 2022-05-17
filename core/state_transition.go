@@ -236,14 +236,10 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	// 6. caller has enough balance to cover asset transfer for **topmost** call
 
 	// Check clauses 1-3, buy gas if everything is correct
-	senderAddr := st.msg.From().Hex()
 	if err := st.preCheck(); err != nil {
-		if common.ShouldTrace(senderAddr) {
-			log.Info("preCheck() has error")
-		}
 		return nil, err
 	}
-	if common.ShouldTrace(senderAddr) {
+	if log.ShouldTrace {
 		log.Info("preCheck() succeed")
 	}
 	msg := st.msg
@@ -266,7 +262,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	if msg.Value().Sign() > 0 && !st.evm.Context.CanTransfer(st.state, msg.From(), msg.Value()) {
 		return nil, fmt.Errorf("%w: address %v", ErrInsufficientFundsForTransfer, msg.From().Hex())
 	}
-	if common.ShouldTrace(senderAddr) {
+	if log.ShouldTrace {
 		log.Info("There is enough funds for Transfer")
 	}
 
@@ -283,7 +279,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	} else {
 		// Increment the nonce for the next transaction
 		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
-		if common.ShouldTrace(senderAddr) {
+		if log.ShouldTrace {
 			log.Info("Increment sender nonce")
 		}
 		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
