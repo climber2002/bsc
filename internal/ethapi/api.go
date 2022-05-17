@@ -965,10 +965,9 @@ func (e *revertError) ErrorData() interface{} {
 func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride) (hexutil.Bytes, error) {
 	log.Info("Received CallArgs")
 	log.Info(fmt.Sprintf("From: %s, To: %s, Gas: %s, GasPrice: %s, blockNr: %d", args.From, args.To, args.Gas, args.GasPrice, blockNrOrHash.BlockNumber))
-	if common.ShouldTrace(args.From.Hex()) {
-		log.SetShouldTrace(true)
-		defer log.SetShouldTrace(false)
-	}
+
+	log.SetShouldTrace(true)
+	defer log.SetShouldTrace(false)
 
 	result, err := DoCall(ctx, s.b, args, blockNrOrHash, overrides, vm.Config{}, 5*time.Second, s.b.RPCGasCap())
 	if err != nil {
