@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"fmt"
 	"hash"
 	"sync"
 	"sync/atomic"
@@ -95,6 +96,10 @@ type EVMInterpreter struct {
 
 	readOnly   bool   // Whether to throw on stateful modifications
 	returnData []byte // Last CALL's return data for subsequent reuse
+
+	// Andy: TODO: Add a new []callStack for last Calls's call stack. When EVM.Call is run
+	// it resets callStack if depth is 0. This []callStack is used in StateTransition
+	// ??? Maybe put this in EVM? so it can be fetched from StateTransition
 }
 
 // NewEVMInterpreter returns a new instance of the Interpreter.
@@ -145,8 +150,11 @@ func NewEVMInterpreter(evm *EVM, cfg Config) *EVMInterpreter {
 // It's important to note that any errors returned by the interpreter should be
 // considered a revert-and-consume-all-gas operation except for
 // ErrExecutionReverted which means revert-and-keep-gas-left.
+// Andy: Entrypoint to interprete contract code
 func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (ret []byte, err error) {
-
+	if log.ShouldTrace {
+		log.Info(fmt.Sprintf("input: %v", input))
+	}
 	// Increment the call depth which is restricted to 1024
 	in.evm.depth++
 	defer func() { in.evm.depth-- }()

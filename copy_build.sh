@@ -1,0 +1,1 @@
+cp ./build/bin/geth /home/ubuntu/geth_testnet/geth_linux

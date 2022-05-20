@@ -8,7 +8,12 @@ var (
 	root          = &logger{[]interface{}{}, new(swapHandler)}
 	StdoutHandler = StreamHandler(os.Stdout, LogfmtFormat())
 	StderrHandler = StreamHandler(os.Stderr, LogfmtFormat())
+	ShouldTrace   = false
 )
+
+func SetShouldTrace(shouldTrace bool) {
+	ShouldTrace = shouldTrace
+}
 
 func init() {
 	root.SetHandler(DiscardHandler())

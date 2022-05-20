@@ -892,6 +892,9 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.Blo
 
 	// Get a new instance of the EVM.
 	msg := args.ToMessage(globalGasCap)
+	if log.ShouldTrace {
+		log.Info("Message is generated")
+	}
 	evm, vmError, err := b.GetEVM(ctx, msg, state, header, nil)
 	if err != nil {
 		return nil, err
@@ -905,6 +908,9 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.Blo
 
 	// Execute the message.
 	gp := new(core.GasPool).AddGas(math.MaxUint64)
+	if log.ShouldTrace {
+		log.Info("Start to core.ApplyMessage")
+	}
 	result, err := core.ApplyMessage(evm, msg, gp)
 	if err := vmError(); err != nil {
 		return nil, err
@@ -957,6 +963,12 @@ func (e *revertError) ErrorData() interface{} {
 // Note, this function doesn't make and changes in the state/blockchain and is
 // useful to execute and retrieve values.
 func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride) (hexutil.Bytes, error) {
+	log.Info("Received CallArgs")
+	log.Info(fmt.Sprintf("From: %s, To: %s, Gas: %s, GasPrice: %s, blockNr: %d", args.From, args.To, args.Gas, args.GasPrice, blockNrOrHash.BlockNumber))
+
+	log.SetShouldTrace(true)
+	defer log.SetShouldTrace(false)
+
 	result, err := DoCall(ctx, s.b, args, blockNrOrHash, overrides, vm.Config{}, 5*time.Second, s.b.RPCGasCap())
 	if err != nil {
 		return nil, err
@@ -965,7 +977,12 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOr
 	if len(result.Revert()) > 0 {
 		return nil, newRevertError(result)
 	}
+	log.Info(fmt.Sprintf("Call result: %v", result.Return()))
 	return result.Return(), result.Err
+}
+
+func (s *PublicBlockChainAPI) Hello(ctx context.Context, text string) (string, error) {
+	return fmt.Sprintf("Hello %s!!!", text), nil
 }
 
 func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.BlockNumberOrHash, gasCap uint64) (hexutil.Uint64, error) {

@@ -18,6 +18,7 @@ package vm
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 )
@@ -76,6 +78,9 @@ func run(evm *EVM, contract *Contract, input []byte, readOnly bool) ([]byte, err
 					evm.interpreter = i
 				}(evm.interpreter)
 				evm.interpreter = interpreter
+			}
+			if log.ShouldTrace {
+				log.Info("Run EVMInterpreter")
 			}
 			return interpreter.Run(contract, input, readOnly)
 		}
@@ -138,7 +143,7 @@ type EVM struct {
 	// global (to this context) ethereum virtual machine
 	// used throughout the execution of the tx.
 	interpreters []Interpreter
-	interpreter  Interpreter
+	interpreter  Interpreter //Andy: This is current interpreter
 	// abort is used to abort the EVM calling operations
 	// NOTE: must be set atomically
 	abort int32
@@ -226,6 +231,9 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 	if value.Sign() != 0 && !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
 		return nil, gas, ErrInsufficientBalance
 	}
+	if log.ShouldTrace {
+		log.Info("Get StateDB snapshot")
+	}
 	snapshot := evm.StateDB.Snapshot()
 	p, isPrecompile := evm.precompile(addr)
 
@@ -269,6 +277,9 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		// Initialise a new contract and set the code that is to be used by the EVM.
 		// The contract is a scoped environment for this execution context only.
 		code := evm.StateDB.GetCode(addr)
+		if log.ShouldTrace {
+			log.Info(fmt.Sprintf("Get code for execution: %v", code))
+		}
 		if len(code) == 0 {
 			ret, err = nil, nil // gas is unchanged
 		} else {
@@ -277,7 +288,7 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 			// The depth-check is already done, and precompiles handled above
 			contract := NewContract(caller, AccountRef(addrCopy), value, gas)
 			contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
-			ret, err = run(evm, contract, input, false)
+			ret, err = run(evm, contract, input, false) // Andy: run the contract
 			gas = contract.Gas
 		}
 	}
