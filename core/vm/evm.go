@@ -77,6 +77,7 @@ func run(evm *EVM, contract *Contract, input []byte, readOnly bool) ([]byte, err
 				}(evm.interpreter)
 				evm.interpreter = interpreter
 			}
+			// Andy: Run interpreter
 			return interpreter.Run(contract, input, readOnly)
 		}
 	}
@@ -146,6 +147,9 @@ type EVM struct {
 	// available gas is calculated in gasCall* according to the 63/64 rule and later
 	// applied in opCall*.
 	callGasTemp uint64
+	// Andy if we need to return trace information
+	Trace     bool
+	TraceInfo []TraceInfo
 }
 
 // NewEVM returns a new EVM. The returned EVM is not thread safe and should
@@ -276,8 +280,15 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 			// If the account has no code, we can abort here
 			// The depth-check is already done, and precompiles handled above
 			contract := NewContract(caller, AccountRef(addrCopy), value, gas)
+			if evm.Trace {
+				contract.TraceInfo = []TraceInfo{}
+			}
+
 			contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
 			ret, err = run(evm, contract, input, false)
+
+			evm.TraceInfo = contract.TraceInfo
+
 			gas = contract.Gas
 		}
 	}

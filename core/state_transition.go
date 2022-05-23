@@ -78,6 +78,8 @@ type ExecutionResult struct {
 	UsedGas    uint64 // Total used gas but include the refunded gas
 	Err        error  // Any error encountered during the execution(listed in core/vm/errors.go)
 	ReturnData []byte // Returned data from evm(function result or data supplied with revert opcode)
+
+	TraceInfo []vm.TraceInfo // Andy trace info
 }
 
 // Unwrap returns the internal evm error which allows us for further
@@ -272,6 +274,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	} else {
 		// Increment the nonce for the next transaction
 		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
+		// Andy: Here call into evm
 		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
 	}
 	st.refundGas()
@@ -287,6 +290,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		UsedGas:    st.gasUsed(),
 		Err:        vmerr,
 		ReturnData: ret,
+		TraceInfo:  st.evm.TraceInfo,
 	}, nil
 }
 

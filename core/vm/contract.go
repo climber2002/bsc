@@ -52,6 +52,10 @@ type AccountRef common.Address
 // Address casts AccountRef to a Address
 func (ar AccountRef) Address() common.Address { return (common.Address)(ar) }
 
+type TraceInfo struct {
+	Address common.Address
+}
+
 // Contract represents an ethereum contract in the state database. It contains
 // the contract code, calling arguments. Contract implements ContractRef
 type Contract struct {
@@ -69,6 +73,8 @@ type Contract struct {
 	CodeHash common.Hash
 	CodeAddr *common.Address
 	Input    []byte
+
+	TraceInfo []TraceInfo // Andy: The trace info
 
 	Gas   uint64
 	value *big.Int

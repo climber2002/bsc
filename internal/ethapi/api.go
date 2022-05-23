@@ -868,7 +868,14 @@ func (diff *StateOverride) Apply(state *state.StateDB) error {
 	return nil
 }
 
-func DoCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, vmCfg vm.Config, timeout time.Duration, globalGasCap uint64) (*core.ExecutionResult, error) {
+func DoCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, vmCfg vm.Config,
+	timeout time.Duration, globalGasCap uint64) (*core.ExecutionResult, error) {
+	return doCall(ctx, b, args, blockNrOrHash, overrides, vmCfg, timeout, globalGasCap, false)
+}
+
+// Add trace bool to indicate if add trace information
+func doCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.BlockNumberOrHash,
+	overrides *StateOverride, vmCfg vm.Config, timeout time.Duration, globalGasCap uint64, trace bool) (*core.ExecutionResult, error) {
 	defer func(start time.Time) { log.Debug("Executing EVM call finished", "runtime", time.Since(start)) }(time.Now())
 
 	state, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
@@ -896,6 +903,10 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.Blo
 	if err != nil {
 		return nil, err
 	}
+	if trace {
+		evm.Trace = true
+	}
+
 	// Wait for the context to be done and cancel the evm. Even if the
 	// EVM has finished, cancelling may be done (repeatedly)
 	gopool.Submit(func() {
@@ -966,6 +977,26 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOr
 		return nil, newRevertError(result)
 	}
 	return result.Return(), result.Err
+}
+
+type ResultWithTraceInfo struct {
+	Result    hexutil.Bytes
+	TraceInfo []vm.TraceInfo
+}
+
+func (s *PublicBlockChainAPI) CallWithTraceInfo(ctx context.Context, args CallArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride) (ResultWithTraceInfo, error) {
+	result, err := doCall(ctx, s.b, args, blockNrOrHash, overrides, vm.Config{}, 5*time.Second, s.b.RPCGasCap(), true)
+	if err != nil {
+		return ResultWithTraceInfo{}, err
+	}
+	// If the result contains a revert reason, try to unpack and return it.
+	if len(result.Revert()) > 0 {
+		return ResultWithTraceInfo{}, newRevertError(result)
+	}
+	return ResultWithTraceInfo{
+		Result:    result.Return(),
+		TraceInfo: result.TraceInfo,
+	}, result.Err
 }
 
 func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.BlockNumberOrHash, gasCap uint64) (hexutil.Uint64, error) {

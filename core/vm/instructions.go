@@ -674,6 +674,11 @@ func opCall(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byt
 	}
 	scope.Contract.Gas += returnGas
 
+	// Andy add Call trace info
+	if scope.Contract.TraceInfo != nil {
+		scope.Contract.TraceInfo = append(scope.Contract.TraceInfo, TraceInfo{Address: toAddr})
+	}
+
 	return ret, nil
 }
 
