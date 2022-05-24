@@ -17,6 +17,8 @@
 package vm
 
 import (
+	"encoding/hex"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
@@ -677,7 +679,7 @@ func opCall(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byt
 	// Andy add Call trace info
 	if scope.Contract.TraceInfo != nil {
 		scope.Contract.TraceInfo = append(scope.Contract.TraceInfo,
-			TraceInfo{Address: toAddr, Input: scope.Contract.Input})
+			TraceInfo{Address: toAddr, Input: hex.EncodeToString(scope.Contract.Input)})
 	}
 
 	return ret, nil
