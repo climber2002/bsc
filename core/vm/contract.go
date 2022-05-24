@@ -54,6 +54,7 @@ func (ar AccountRef) Address() common.Address { return (common.Address)(ar) }
 
 type TraceInfo struct {
 	Address common.Address
+	Input   []byte
 }
 
 // Contract represents an ethereum contract in the state database. It contains
